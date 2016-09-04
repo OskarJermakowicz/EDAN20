@@ -4,6 +4,7 @@ import re
 import os
 import codecs
 import math
+import time
 
 # Gets a list of all files with a certain suffix in a certain folder
 def get_files(dir, suffix):
@@ -79,15 +80,15 @@ def program(dir):
             cos_matrix[f, f_compare] = dot_product/(math.sqrt(abs_doc1) * math.sqrt(abs_doc2))
 
     ###### Test print ######
-    # print(master_index['samlar'])
-    # print(master_index['ände'])
-
-    # print(master_tf['nils.txt']['samlar'])
-
-    # print(master_tf.__len__(), master_index['hej'].__len__())
-    # print(master_idf['hej'])
+    print("\n--- Some different tests ---")
+    print(master_index['samlar'])
+    print(master_index['ände'])
+    print(master_tf['nils.txt']['samlar'])
+    print(master_tf.__len__(), master_index['hej'].__len__())
+    print(master_idf['hej'])
 
     # Prints the document representation of tf-idf
+    print("\n--- tf-idf representation of some words in some documents ---")
     files_to_check = ['bannlyst.txt', 'gosta.txt', 'herrgard.txt', 'jerusalem.txt', 'nils.txt']
     words_to_check = ['känna', 'gås', 'nils', 'et']
     for f in files_to_check:
@@ -96,13 +97,13 @@ def program(dir):
             print("\t", word, master_tfidf[f][word])
 
     # Prints the cosine simliarity matrix
-    print("\n-- Similarities between two documents: --")
+    print("\n--- Similarities between two documents: ---")
     for f in master_tfidf:
         for f_compare in master_tfidf:
             print(f, "\t\t", f_compare, "\t\t", cos_matrix[f,f_compare])
         print()
 
-    print(cos_matrix)
-
 # Run the indexing program
+start_time = time.time()
 program(sys.argv[1])
+print("--- Execution time: %s seconds ---" % (time.time() - start_time))
