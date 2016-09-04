@@ -15,7 +15,6 @@ def get_files(dir, suffix):
 
 # The program that will be run
 def program(dir):
-    # Master index structure: word: { textfile: [pos1,pos2,...] }
     master_index = {}
     master_tf = {}
     master_idf = {}
@@ -46,26 +45,40 @@ def program(dir):
                 else:
                     master_tf[file_name] = { match.group(1).lower(): 1 }
 
-
             # Save the indexing to an .idx file
             with open('file_name.idx', 'w') as f:
                 f.write(str(master_index))
                 # pickle.dump(str(master_index), f)
 
-
-
     # Calculate idf
     for word in master_index:
-        master_idf[word] = math.log10(master_tf.__len__()/master_index[word].__len__())
-
+        master_idf[word] = math.log(master_tf.__len__()/master_index[word].__len__(), math.e)
 
     # Calculate tf-idf and populate master_tfidf
     for f in master_tf:
         master_tfidf[f] = {}
-        for word in master_tf[f]:
-            master_tfidf[f][word] = (1/master_tf[f][word])*master_idf[word]
+        for word in master_index:
+            if word in master_tf[f]:
+                master_tfidf[f][word] = (1/master_tf[f][word])*master_idf[word]
+            else:
+                master_tfidf[f][word] = 0.0
 
-    # Test print
+    # Compare similarity of documents, using cosine similarity
+    cos_matrix = {}
+    for f in master_tfidf:
+        for f_compare in master_tfidf:
+            dot_product = 0
+            abs_doc1 = 0
+            abs_doc2 = 0
+
+            for word in master_tfidf[f]:
+                dot_product += master_tfidf[f][word] * master_tfidf[f_compare][word]
+                abs_doc1 += master_tfidf[f][word]**2
+                abs_doc2 += master_tfidf[f_compare][word]**2
+
+            cos_matrix[f, f_compare] = dot_product/(math.sqrt(abs_doc1) * math.sqrt(abs_doc2))
+
+    ###### Test print ######
     # print(master_index['samlar'])
     # print(master_index['ände'])
 
@@ -74,17 +87,22 @@ def program(dir):
     # print(master_tf.__len__(), master_index['hej'].__len__())
     # print(master_idf['hej'])
 
+    # Prints the document representation of tf-idf
     files_to_check = ['bannlyst.txt', 'gosta.txt', 'herrgard.txt', 'jerusalem.txt', 'nils.txt']
     words_to_check = ['känna', 'gås', 'nils', 'et']
     for f in files_to_check:
         print(f)
         for word in words_to_check:
-            if word in master_tfidf[f]:
-                print("\t", word, master_tfidf[f][word])
-            else:
-                print("\t", word, 0.0)
+            print("\t", word, master_tfidf[f][word])
 
+    # Prints the cosine simliarity matrix
+    print("\n-- Similarities between two documents: --")
+    for f in master_tfidf:
+        for f_compare in master_tfidf:
+            print(f, "\t\t", f_compare, "\t\t", cos_matrix[f,f_compare])
+        print()
 
+    print(cos_matrix)
 
 # Run the indexing program
 program(sys.argv[1])
