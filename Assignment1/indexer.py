@@ -2,6 +2,7 @@ import sys
 import pickle
 import re
 import os
+import codecs
 
 # Gets a list of all files with a certain suffix in a certain folder
 def get_files(dir, suffix):
@@ -19,8 +20,8 @@ def program(dir):
     for file_name in get_files(dir, 'txt'):
         # Import the file to index
         fi = dir + "/" + file_name
-        with open(fi) as f:
-            pattern = '([a-zA-Z]+\w+)'
+        with codecs.open(fi, 'r', 'utf-8') as f:
+            pattern = '([åäöÅÄÖA-Za-z_]+)'
             regex = re.compile(pattern, re.IGNORECASE | re.U)
             for match in regex.finditer(f.read()):
                 if match.group(1).lower() in master_index:
