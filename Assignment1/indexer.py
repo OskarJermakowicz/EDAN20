@@ -20,15 +20,23 @@ def program(dir):
     master_tf = {}
     master_idf = {}
     master_tfidf = {}
+    word_count = {}
 
     for file_name in get_files(dir, 'txt'):
         # Import the file to index
         fi = dir + "/" + file_name
         with codecs.open(fi, 'r', 'utf-8') as f:
+            # Match all words (words that can also contain swedish letters)
             pattern = '([åäöÅÄÖA-Za-z_]+)'
             regex = re.compile(pattern, re.IGNORECASE | re.U)
             for match in regex.finditer(f.read()):
-                # Populate master_index
+                # Count the amount of words in each file
+                if file_name not in word_count:
+                    word_count[file_name] = 1
+                else:
+                    word_count[file_name] += 1
+
+                # Populate master_index (for each word give position of the word in each file)
                 if match.group(1).lower() in master_index:
                     if file_name in master_index[match.group(1).lower()]:
                         master_index[match.group(1).lower()][file_name].append(match.start())
@@ -37,7 +45,7 @@ def program(dir):
                 else:
                     master_index[match.group(1).lower()] = { file_name: [match.start()] }
 
-                # Populate master_tf
+                # Populate master_tf (count how many times each word appears in a file)
                 if file_name in master_tf:
                     if match.group(1).lower() in master_tf[file_name]:
                         master_tf[file_name][match.group(1).lower()] += 1
@@ -51,16 +59,16 @@ def program(dir):
                 f.write(str(master_index))
                 # pickle.dump(str(master_index), f)
 
-    # Calculate idf
+    # Calculate idf - log10(amount of documents / amount of documents word appears in)
     for word in master_index:
-        master_idf[word] = math.log(master_tf.__len__()/master_index[word].__len__(), math.e)
+        master_idf[word] = math.log10(master_tf.__len__()/master_index[word].__len__())
 
-    # Calculate tf-idf and populate master_tfidf
+    # Calculate tf-idf
     for f in master_tf:
         master_tfidf[f] = {}
         for word in master_index:
             if word in master_tf[f]:
-                master_tfidf[f][word] = (1/master_tf[f][word])*master_idf[word]
+                master_tfidf[f][word] = (master_tf[f][word]/word_count[f])*master_idf[word]
             else:
                 master_tfidf[f][word] = 0.0
 
@@ -79,7 +87,7 @@ def program(dir):
 
             cos_matrix[f, f_compare] = dot_product/(math.sqrt(abs_doc1) * math.sqrt(abs_doc2))
 
-    ###### Test print ######
+    """ Test prints """
     print("\n--- Some different tests ---")
     print(master_index['samlar'])
     print(master_index['ände'])
