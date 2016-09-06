@@ -1,10 +1,10 @@
 import sys
 import pickle
-import re
 import os
 import codecs
 import math
 import time
+import regex as re
 
 # Gets a list of all files with a certain suffix in a certain folder
 def get_files(dir, suffix):
@@ -27,7 +27,7 @@ def program(dir):
         fi = dir + "/" + file_name
         with codecs.open(fi, 'r', 'utf-8') as f:
             # Match all words (words that can also contain swedish letters)
-            pattern = '([åäöÅÄÖA-Za-z_]+)'
+            pattern = '(\p{L}+)'
             regex = re.compile(pattern, re.IGNORECASE | re.U)
             for match in regex.finditer(f.read()):
                 # Count the amount of words in each file
@@ -88,12 +88,9 @@ def program(dir):
             cos_matrix[f, f_compare] = dot_product/(math.sqrt(abs_doc1) * math.sqrt(abs_doc2))
 
     """ Test prints """
-    print("\n--- Some different tests ---")
+    print("\n--- Master index test for samlar and ände ---")
     print(master_index['samlar'])
     print(master_index['ände'])
-    print(master_tf['nils.txt']['samlar'])
-    print(master_tf.__len__(), master_index['hej'].__len__())
-    print(master_idf['hej'])
 
     # Prints the document representation of tf-idf
     print("\n--- tf-idf representation of some words in some documents ---")
