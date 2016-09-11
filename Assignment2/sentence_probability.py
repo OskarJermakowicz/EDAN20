@@ -68,7 +68,7 @@ def count_ngrams(words, n):
 
 # Performs all calculations such as probabilty etc and prints it as a table
 def print_analysis(sentence, word_count, bigrams):
-    print("\n--- Analysis of \"", sentence, "\" ---")
+    print("\n--- Analysis of \"", sentence[4:-4], "\" ---")
     print("Unigrams")
     print("====================================================================")
     print('%-12s%-12s%-12s%-12s' % ("wi", "C(wi)", "#words", "P(wi)"))
@@ -82,7 +82,7 @@ def print_analysis(sentence, word_count, bigrams):
         print('%-12s%-12s%-12s%-12s' % (word.lower(), word_count[word.lower()], sum(tok[0].values()), word_count[word.lower()] / sum(tok[0].values())))
     entropy_unigrams *= -1/words[1:].__len__()
     print("====================================================================")
-    print("Prob. unigrams:", prob_unigrams, "Entropy rate:", entropy_unigrams, "Perplexity:", "n/a")
+    print("Prob. unigrams:", prob_unigrams, "Entropy rate:", entropy_unigrams, "Perplexity:", 2**entropy_unigrams)
 
 
     print("\nBigrams")
@@ -110,7 +110,7 @@ def print_analysis(sentence, word_count, bigrams):
         index += 1
     entropy_bigrams *= -1/words[:-1].__len__()
     print("====================================================================")
-    print("Prob. bigrams:", prob_bigrams, "Entropy rate:", entropy_bigrams, "Perplexity:", "n/a")
+    print("Prob. bigrams:", prob_bigrams, "Entropy rate:", entropy_bigrams, "Perplexity:", 2**entropy_bigrams)
 
 # Prints a certain text to a certain file
 def print_to_file(file_name, text):
