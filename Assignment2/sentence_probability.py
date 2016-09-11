@@ -1,4 +1,4 @@
-import sys, codecs, time
+import sys, codecs, time, math
 import regex as re
 
 # Returns a list of 3 elements: The word_count dict, the normalized text and list of words
@@ -74,10 +74,12 @@ def print_analysis(sentence, word_count, bigrams):
     print('%-12s%-12s%-12s%-12s' % ("wi", "C(wi)", "#words", "P(wi)"))
     print("====================================================================")
     words = sentence.split()
+    prob_unigrams = 1
     for word in words[1:]:
+        prob_unigrams *= word_count[word.lower()] / sum(tok[0].values())
         print('%-12s%-12s%-12s%-12s' % (word.lower(), word_count[word.lower()], sum(tok[0].values()), word_count[word.lower()] / sum(tok[0].values())))
     print("====================================================================")
-    print("Prob. unigrams:", "n/a", "Entropy rate:", "n/a", "Perplexity:", "n/a")
+    print("Prob. unigrams:", prob_unigrams, "Entropy rate:", "n/a", "Perplexity:", "n/a")
 
 
     print("\nBigrams")
@@ -85,6 +87,7 @@ def print_analysis(sentence, word_count, bigrams):
     print('%-12s%-12s%-12s%-12s%-12s' % ("wi", "wi+1", "Ci,i+1", "C(i)", "P(wi+1|wi)"))
     print("====================================================================")
     words = sentence.split()
+    prob_bigrams = 1
     index = 0
     for word in words[:-1]:
         bigram_count = 0
@@ -92,13 +95,15 @@ def print_analysis(sentence, word_count, bigrams):
         if (words[index + 1].lower(), word.lower()) in bigrams: bigram_count += bigrams[(words[index+1].lower(),word.lower())]
 
         if bigram_count == 0:
+            prob_bigrams *= word_count[words[index+1].lower()] / sum(tok[0].values())
             print('%-12s%-12s%-12s%-12s*backoff:\t%-12s' % (word.lower(), words[index + 1].lower(), bigram_count, word_count[word.lower()], word_count[words[index+1].lower()] / sum(tok[0].values())))
         else:
+            prob_bigrams *= bigram_count/word_count[word.lower()]
             print('%-12s%-12s%-12s%-12s%-12s' % (word.lower(), words[index+1].lower(), bigram_count, word_count[word.lower()], bigram_count/word_count[word.lower()]))
 
         index += 1
     print("====================================================================")
-    print("Prob. bigrams:", "n/a", "Entropy rate:", "n/a", "Perplexity:", "n/a")
+    print("Prob. bigrams:", prob_bigrams, "Entropy rate:", "n/a", "Perplexity:", "n/a")
 
 # Prints a certain text to a certain file
 def print_to_file(file_name, text):
