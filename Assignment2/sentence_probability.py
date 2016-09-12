@@ -138,4 +138,11 @@ print("Amount of 4-grams:", frequency_fourgrams.__len__(), "\tPossible number of
 # Assignment example
 print_analysis("<s> Det var en gång en katt som hette Nils </s>", tok[0], frequency_bigrams)
 
+# My examples
+#print_analysis("<s> Ett par dar senare tilldrog sig ännu en sådan där besynnerlig händelse </s>", tok[0], frequency_bigrams)
+#print_analysis("<s> Akka gav därmed tecken till uppbrott </s>", tok[0], frequency_bigrams)
+#print_analysis("<s> Det var den första regndagen under resan </s>", tok[0], frequency_bigrams)
+#print_analysis("<s> Men på samma gång har det uppkommit en stor skillnad mellan de tre trappstegen </s>", tok[0], frequency_bigrams)
+#print_analysis("<s> Han behövde inte berätta mer </s>", tok[0], frequency_bigrams)
+
 print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
