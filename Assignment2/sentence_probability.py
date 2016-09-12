@@ -12,11 +12,12 @@ def tokenize(file_name):
     with codecs.open(file_name, 'r', 'utf-8') as f:
         text = f.read()
         # Go through each sentence
-        pattern = '((\s)?+[^.!?]*[.!?])'
-        regex = re.compile(pattern, re.IGNORECASE | re.U)
-        for sentence in regex.finditer(text):
-            new_text += "<s> "
-            new_text += sentence.group(1).replace('.', ' ').replace('\n', '').lower()
+        sentence_pattern = '((\s)?+[^.!?]*[.!?])'
+        sentence_regex = re.compile(sentence_pattern, re.IGNORECASE | re.U)
+        for sentence in sentence_regex.finditer(text):
+            # Add sentence tags and the sentence to new_text
+            new_text += "<s>"
+            new_text += sentence.group(1).replace('\n', ' ').lower()
             new_text += " </s>\n"
 
             # Also add sentence tags to word_count
@@ -28,13 +29,21 @@ def tokenize(file_name):
                 word_count["</s>"] += 1
 
             # Also go through the words in the sentence.
-            pattern = '(\p{L}+)'
-            regex = re.compile(pattern, re.IGNORECASE | re.U)
-            for word in regex.finditer(sentence.group(1)):
+            word_pattern = '(\p{L}+)'
+            word_regex = re.compile(word_pattern, re.IGNORECASE | re.U)
+            for word in word_regex.finditer(sentence.group(1)):
                 if word.group(1).lower() in word_count:
                     word_count[word.group(1).lower()] += 1
                 else:
                     word_count[word.group(1).lower()] = 1
+
+        # Complete new_text by removing punctuation characters and cleaning up spaces
+        punc = ['.', ',', '!', '?', ':', ';', '"', '\'']
+        for p in punc:
+            new_text = new_text.replace(p, '')
+        new_text = new_text.replace('  ', ' ')
+
+        # Add the necessary components to the result
         result.append(word_count)
         result.append(new_text)
         result.append(new_text.split())
@@ -94,18 +103,14 @@ def print_analysis(sentence, word_count, bigrams):
     entropy_bigrams = 0
     index = 0
     for word in words[:-1]:
-        bigram_count = 0
-        if (word.lower(), words[index + 1].lower()) in bigrams: bigram_count += bigrams[(word.lower(),words[index+1].lower())]
-        if (words[index + 1].lower(), word.lower()) in bigrams: bigram_count += bigrams[(words[index+1].lower(),word.lower())]
-
-        if bigram_count == 0:
+        if (word.lower(), words[index + 1].lower()) not in bigrams:
             prob_bigrams *= word_count[words[index+1].lower()] / sum(tok[0].values())
             entropy_bigrams += math.log2(word_count[words[index+1].lower()] / sum(tok[0].values()))
-            print('%-12s%-12s%-12s%-12s*backoff:\t%-12s' % (word.lower(), words[index + 1].lower(), bigram_count, word_count[word.lower()], word_count[words[index+1].lower()] / sum(tok[0].values())))
+            print('%-12s%-12s%-12s%-12s*backoff:\t%-12s' % (word.lower(), words[index + 1].lower(), 0, word_count[word.lower()], word_count[words[index+1].lower()] / sum(tok[0].values())))
         else:
-            prob_bigrams *= bigram_count/word_count[word.lower()]
-            entropy_bigrams += math.log2(bigram_count/word_count[word.lower()])
-            print('%-12s%-12s%-12s%-12s%-12s' % (word.lower(), words[index+1].lower(), bigram_count, word_count[word.lower()], bigram_count/word_count[word.lower()]))
+            prob_bigrams *= bigrams[word.lower(), words[index+1].lower()]/word_count[word.lower()]
+            entropy_bigrams += math.log2(bigrams[word.lower(), words[index+1].lower()]/word_count[word.lower()])
+            print('%-12s%-12s%-12s%-12s%-12s' % (word.lower(), words[index+1].lower(), bigrams[word.lower(), words[index+1].lower()], word_count[word.lower()], bigrams[word.lower(), words[index+1].lower()]/word_count[word.lower()]))
 
         index += 1
     entropy_bigrams *= -1/words[:-1].__len__()
@@ -127,9 +132,10 @@ frequency_fourgrams = count_ngrams(tok[2], 4)
 print_to_file('result.txt', tok[1])
 
 print("--- Counting unigrams and bigrams ---")
-print("Possible bigrams: ", frequency_bigrams.__len__(), "\tReal number: ", sum(frequency_bigrams.values()))
-print("Possible 4-grams: ", frequency_fourgrams.__len__(), "\tReal number: ", sum(frequency_fourgrams.values()))
+print("Amount of bigrams:", frequency_bigrams.__len__(), "\tPossible amount of bigrams:", tok[0].__len__()**2)
+print("Amount of 4-grams:", frequency_fourgrams.__len__(), "\tPossible number of 4-grams:", tok[0].__len__()**4)
 
+# Assignment example
 print_analysis("<s> Det var en gång en katt som hette Nils </s>", tok[0], frequency_bigrams)
 
 print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
