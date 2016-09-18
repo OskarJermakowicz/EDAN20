@@ -110,5 +110,6 @@ if __name__ == '__main__':
     # gold-standard chunk (chunk), and predicted chunk (pchunk)
     for sentence in predicted:
         for row in sentence:
+            f_out.write(row['form'] + ' ' + row['pos'] + ' ' + row['chunk'] + ' ' + row['pchunk'] + '\n')
         f_out.write('\n')
     f_out.close()
