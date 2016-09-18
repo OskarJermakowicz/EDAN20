@@ -48,16 +48,12 @@ def train(corpus):
     pos_chunk = {}
 
     for pos in chunk_dist:
-        freq = 0
+        most_freq = [0, ""]
         for chunk in chunk_dist[pos]:
-            if chunk_dist[pos][chunk] > freq: freq = chunk_dist[pos][chunk]
-        pos_chunk[pos] = freq
+            if chunk_dist[pos][chunk] > most_freq[0]:
+                most_freq = [chunk_dist[pos][chunk], chunk]
+        pos_chunk[pos] = most_freq[1]
 
-    """
-    Fill in code so that for each part of speech, you select the most frequent chunk.
-    You will build a dictionary with key values:
-    pos_chunk[pos] = most frequent chunk for pos
-    """
     return pos_chunk
 
 
@@ -75,6 +71,7 @@ def predict(model, corpus):
     for sentence in corpus:
         for row in sentence:
             row['pchunk'] = model[row['pos']]
+
     return corpus
 
 
@@ -105,16 +102,13 @@ if __name__ == '__main__':
     test_corpus = conll_reader.split_rows(test_corpus, column_names)
 
     model = train(train_corpus)
-
     predicted = predict(model, test_corpus)
     accuracy = eval(predicted)
     print("Accuracy", accuracy)
-    f_out = open('out', 'w')
+    f_out = open('output.txt', 'w')
     # We write the word (form), part of speech (pos),
     # gold-standard chunk (chunk), and predicted chunk (pchunk)
     for sentence in predicted:
         for row in sentence:
-            f_out.write(row['form'] + ' ' + row['pos'] + ' ' +
-                        row['chunk'] + ' ' + row['pchunk'] + '\n')
         f_out.write('\n')
     f_out.close()
