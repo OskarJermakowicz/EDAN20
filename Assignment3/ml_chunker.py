@@ -147,7 +147,7 @@ if __name__ == '__main__':
     train_corpus = 'train.txt'
     test_corpus = 'test.txt'
     w_size = 2  # The size of the context window to the left and right of the word
-    feature_names = [
+    feature_names = ['word_n2', 'word_n1', 'word', 'word_p1', 'word_p2',
                      'pos_n2', 'pos_n1', 'pos', 'pos_p1', 'pos_p2']
                      #'pchunk_n2', 'pchunk_n1']
 
