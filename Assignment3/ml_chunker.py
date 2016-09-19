@@ -147,8 +147,9 @@ if __name__ == '__main__':
     train_corpus = 'train.txt'
     test_corpus = 'test.txt'
     w_size = 2  # The size of the context window to the left and right of the word
-    feature_names = ['word_n2', 'word_n1', 'word', 'word_p1', 'word_p2',
+    feature_names = [
                      'pos_n2', 'pos_n1', 'pos', 'pos_p1', 'pos_p2']
+                     #'pchunk_n2', 'pchunk_n1']
 
     train_sentences = conll_reader.read_sentences(train_corpus)
 
@@ -167,6 +168,8 @@ if __name__ == '__main__':
 
     training_start_time = time.clock()
     print("Training the model...")
+    #classifier = linear_model.PassiveAggressiveClassifier()
+    #classifier = linear_model.Perceptron(penalty='l2')
     classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
     model = classifier.fit(X, y)
     print(model)
@@ -191,7 +194,7 @@ if __name__ == '__main__':
     # but we need to predict one sentence at a time to have the same
     # corpus structure
     print("Predicting the test set...")
-    f_out = open('output_ml.txt', 'w')
+    f_out = open('output_ml.txt', 'w', newline='\n')
     predict(test_sentences, feature_names, f_out)
 
     end_time = time.clock()

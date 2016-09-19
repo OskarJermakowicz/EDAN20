@@ -3,7 +3,7 @@ Baseline chunker for CoNLL 2000
 """
 __author__ = "Pierre Nugues"
 
-import conll_reader
+import conll_reader, time
 
 
 def count_pos(corpus):
@@ -92,6 +92,8 @@ def eval(predicted):
 
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     column_names = ['form', 'pos', 'chunk']
     train_file = 'train.txt'
     test_file = 'test.txt'
@@ -105,7 +107,7 @@ if __name__ == '__main__':
     predicted = predict(model, test_corpus)
     accuracy = eval(predicted)
     print("Accuracy", accuracy)
-    f_out = open('output.txt', 'w')
+    f_out = open('output.txt', 'w', newline='\n')
     # We write the word (form), part of speech (pos),
     # gold-standard chunk (chunk), and predicted chunk (pchunk)
     for sentence in predicted:
@@ -113,3 +115,5 @@ if __name__ == '__main__':
             f_out.write(row['form'] + ' ' + row['pos'] + ' ' + row['chunk'] + ' ' + row['pchunk'] + '\n')
         f_out.write('\n')
     f_out.close()
+
+    print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
