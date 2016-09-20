@@ -125,18 +125,25 @@ def encode_classes(y_symbols):
 def predict(test_sentences, feature_names, f_out):
     for test_sentence in test_sentences:
         X_test_dict, y_test_symbols = extract_features_sent(test_sentence, w_size, feature_names)
-        # Vectorize the test sentence and one hot encoding
-        X_test = vec.transform(X_test_dict)
-        # Predicts the chunks and returns numbers
-        y_test_predicted = classifier.predict(X_test)
-        # Converts to chunk names
-        y_test_predicted_symbols = list(dict_classes[i] for i in y_test_predicted)
-        # Appends the predicted chunks as a last column and saves the rows
+        #print("x_test_dict:", X_test_dict)
+        #print("test_sentence:", test_sentence)
+
         rows = test_sentence.splitlines()
-        rows = [rows[i] + ' ' + y_test_predicted_symbols[i] for i in range(len(rows))]
-        for row in rows:
-            f_out.write(row + '\n')
+        index = 0
+        pred_symbol = ""
+        for word in X_test_dict:
+            word['pchunk_n1'] = word['pchunk_n2']
+            word['pchunk_n2'] = pred_symbol
+
+            X_test = vec.transform(X_test_dict)
+            y_test_predicted = classifier.predict(X_test)
+            y_test_predicted_symbols = list(dict_classes[i] for i in y_test_predicted)
+            f_out.write(rows[index] + ' ' + y_test_predicted_symbols[index] + '\n')
+
+            pred_symbol = y_test_predicted_symbols[index]
+            index += 1
         f_out.write('\n')
+        #två ord innan och två ord efter, i beginning of sentence: två ord innan är två st BOS. När man prediktar första ordet får man X. sen använder man på nästa ord BOS och X som pchunk
     f_out.close()
 
 
