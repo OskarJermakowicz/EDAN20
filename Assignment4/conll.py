@@ -5,7 +5,6 @@ __author__ = "Pierre Nugues"
 
 import os, time, codecs
 
-
 def get_files(dir, suffix):
     """
     Returns all the files in a folder ending with suffix
@@ -23,7 +22,6 @@ def get_files(dir, suffix):
             files.append(path)
     return files
 
-
 def read_sentences(file):
     """
     Creates a list of sentences from the corpus
@@ -35,7 +33,6 @@ def read_sentences(file):
         content = f.read().strip()
         sentences = content.split('\n\n')
     return sentences
-
 
 def split_rows(sentences, column_names):
     """
@@ -50,66 +47,52 @@ def split_rows(sentences, column_names):
     start = [dict(zip(column_names, root_values))]
     for sentence in sentences:
         rows = sentence.split('\n')
-        sentence = [dict(zip(column_names, row.split())) for row in rows if row[0] != '#']
+        sentence = [dict(zip(column_names, row.split())) for row in rows if row[0] != '#' and '-' not in row.split()[0]]
         sentence = start + sentence
         new_sentences.append(sentence)
     return new_sentences
 
 
 def save(file, formatted_corpus, column_names):
-    f_out = open(file, 'w')
-    for sentence in formatted_corpus:
-        for row in sentence[1:]:
-            # print(row, flush=True)
-            for col in column_names[:-1]:
+    with codecs.open(file, 'w', 'utf-8') as f_out:
+        for sentence in formatted_corpus:
+            for row in sentence[1:]:
+                # print(row, flush=True)
+                for col in column_names[:-1]:
+                    if col in row:
+                        f_out.write(row[col] + '\t')
+                    else:
+                        f_out.write('_\t')
+                col = column_names[-1]
                 if col in row:
-                    f_out.write(row[col] + '\t')
+                    f_out.write(row[col] + '\n')
                 else:
-                    f_out.write('_\t')
-            col = column_names[-1]
-            if col in row:
-                f_out.write(row[col] + '\n')
-            else:
-                f_out.write('_\n')
-        f_out.write('\n')
-    f_out.close()
+                    f_out.write('_\n')
+            f_out.write('\n')
 
-def find_ssvb_pairs(formatted_corpus):
-    # Key: tuple of the pair, Value: how many times it occurs
-    rep = {}
+
+def find_pairs_triples(formatted_corpus):
+    pairs = {}
+    triples = {}
 
     for sentence in formatted_corpus:
         for word in sentence:
-            if word['deprel'] == 'SS':
+            if word['deprel'] == 'SS' or word['deprel'] == 'nsubj':
                 subject = word['form'].lower()
                 verb = sentence[int(word['head'])]['form'].lower()
-                if (subject, verb) not in rep:
-                    rep[(subject, verb)] = 1
+                if (subject, verb) not in pairs:
+                    pairs[(subject, verb)] = 1
                 else:
-                    rep[(subject, verb)] += 1
-    return rep
-
-def find_ssvbobj_triples(formatted_corpus):
-    # Key: tuple of the triple, Value: how many times it occurs
-    rep = {}
-
-    for sentence in formatted_corpus:
-        for word in sentence:
-            if word['deprel'] == 'SS':
-                subject = word['form'].lower()
-                verb = sentence[int(word['head'])]['form'].lower()
-
+                    pairs[(subject, verb)] += 1
                 for pobj in sentence:
-                    if pobj['deprel'] == 'OO' and pobj['head'] == word['head']:
+                    if (pobj['deprel'] == 'OO' or pobj['deprel'] == 'dobj') and pobj['head'] == word['head']:
                         object = pobj['form'].lower()
-                        if (subject, verb, object) not in rep:
-                            rep[(subject, verb, object)] = 1
+                        if (subject, verb, object) not in triples:
+                            triples[(subject, verb, object)] = 1
                         else:
-                            rep[(subject, verb, object)] += 1
+                            triples[(subject, verb, object)] += 1
 
-    return rep
-
-
+    return (pairs, triples)
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -122,9 +105,11 @@ if __name__ == '__main__':
     sentences = read_sentences(train_file)
     formatted_corpus = split_rows(sentences, column_names_2006)
     print(train_file, len(formatted_corpus))
-    print(formatted_corpus[15])
 
-    ssvb_pairs = find_ssvb_pairs(formatted_corpus)
+    rep = find_pairs_triples(formatted_corpus)
+    ssvb_pairs = rep[0]
+    ssvbobj_triples = rep[1]
+
     print("\n--- Total amount of pairs ---")
     print(sum(ssvb_pairs.values()))
 
@@ -132,12 +117,38 @@ if __name__ == '__main__':
     for pair in sorted(ssvb_pairs, key=ssvb_pairs.get, reverse=True)[:5]:
         print(ssvb_pairs[pair], "\t", pair[0], pair[1])
 
-    ssvbobj_triples = find_ssvbobj_triples(formatted_corpus)
     print("\n--- Total amount of triples ---")
     print(sum(ssvbobj_triples.values()))
 
     print("\n--- Five most common subject-verb-object triples ---")
     for triple in sorted(ssvbobj_triples, key=ssvbobj_triples.get, reverse=True)[:5]:
         print(ssvbobj_triples[triple], "\t", triple[0], triple[1], triple[2])
+
+
+    column_names_u = ['id', 'form', 'lemma', 'upostag', 'xpostag', 'feats', 'head', 'deprel', 'deps', 'misc']
+
+    files = get_files('ud-treebanks-v1.3/UD_German', 'train.conllu')
+    for train_file in files:
+        sentences = read_sentences(train_file)
+        formatted_corpus = split_rows(sentences, column_names_u)
+        print("\n\n", train_file, len(formatted_corpus))
+
+        rep = find_pairs_triples(formatted_corpus)
+        ssvb_pairs = rep[0]
+        ssvbobj_triples = rep[1]
+
+        print("\n--- Total amount of pairs ---")
+        print(sum(ssvb_pairs.values()))
+
+        print("\n--- Five most common subject-verb pairs ---")
+        for pair in sorted(ssvb_pairs, key=ssvb_pairs.get, reverse=True)[:5]:
+            print(ssvb_pairs[pair], "\t", pair[0], pair[1])
+
+        print("\n--- Total amount of triples ---")
+        print(sum(ssvbobj_triples.values()))
+
+        print("\n--- Five most common subject-verb-object triples ---")
+        for triple in sorted(ssvbobj_triples, key=ssvbobj_triples.get, reverse=True)[:5]:
+            print(ssvbobj_triples[triple], "\t", triple[0], triple[1], triple[2])
 
     print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
