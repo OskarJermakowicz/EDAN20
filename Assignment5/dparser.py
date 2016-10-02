@@ -23,13 +23,13 @@ def reference(stack, queue, state):
         # print('ra', queue[0]['deprel'], stack[0]['cpostag'], queue[0]['cpostag'])
         deprel = '.' + queue[0]['deprel']
         stack, queue, state = transition.right_arc(stack, queue, state)
-        return stack, queue, state, 'ra' + deprel
+        return stack, queue, state, 'ra' #+ deprel
     # Left arc
     if stack and queue[0]['id'] == stack[0]['head']:
         # print('la', stack[0]['deprel'], stack[0]['cpostag'], queue[0]['cpostag'])
         deprel = '.' + stack[0]['deprel']
         stack, queue, state = transition.left_arc(stack, queue, state)
-        return stack, queue, state, 'la' + deprel
+        return stack, queue, state, 'la' #+ deprel
     # Reduce
     if stack and transition.can_reduce(stack, state):
         for word in stack:
