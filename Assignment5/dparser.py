@@ -5,7 +5,7 @@ __author__ = "Pierre Nugues"
 
 import transition
 import conll
-
+import features
 
 def reference(stack, queue, state):
     """
@@ -23,13 +23,13 @@ def reference(stack, queue, state):
         # print('ra', queue[0]['deprel'], stack[0]['cpostag'], queue[0]['cpostag'])
         deprel = '.' + queue[0]['deprel']
         stack, queue, state = transition.right_arc(stack, queue, state)
-        return stack, queue, state, 'ra' #+ deprel
+        return stack, queue, state, 'ra' + deprel
     # Left arc
     if stack and queue[0]['id'] == stack[0]['head']:
         # print('la', stack[0]['deprel'], stack[0]['cpostag'], queue[0]['cpostag'])
         deprel = '.' + stack[0]['deprel']
         stack, queue, state = transition.left_arc(stack, queue, state)
-        return stack, queue, state, 'la' #+ deprel
+        return stack, queue, state, 'la' + deprel
     # Reduce
     if stack and transition.can_reduce(stack, state):
         for word in stack:
@@ -43,7 +43,6 @@ def reference(stack, queue, state):
     stack, queue, state = transition.shift(stack, queue, state)
     return stack, queue, state, 'sh'
 
-
 if __name__ == '__main__':
     train_file = 'swedish_talbanken05_train.conll'
     test_file = 'swedish_talbanken05_test_blind.conll'
@@ -54,7 +53,7 @@ if __name__ == '__main__':
     formatted_corpus = conll.split_rows(sentences, column_names_2006)
 
     sent_cnt = 0
-    for sentence in formatted_corpus:
+    for sentence in []:
         sent_cnt += 1
         if sent_cnt % 1000 == 0:
             print(sent_cnt, 'sentences on', len(formatted_corpus), flush=True)
@@ -69,11 +68,36 @@ if __name__ == '__main__':
         while queue:
             stack, queue, state, trans = reference(stack, queue, state)
             transitions.append(trans)
+
         stack, state = transition.empty_stack(stack, state)
-        print('Equal graphs:', transition.equal_graphs(sentence, state))
+        #print('Equal graphs:', transition.equal_graphs(sentence, state))
 
         # Poorman's projectivization to have well-formed graphs.
         for word in sentence:
             word['head'] = state['heads'][word['id']]
-        print(transitions)
-        print(state)
+        #print(transitions)
+        #print(state)
+
+    mx = []
+    for sentence in formatted_corpus:
+        stack = []
+        queue = list(sentence)
+        state = {}
+        state['heads'] = {}
+        state['heads']['0'] = '0'
+        state['deprels'] = {}
+        state['deprels']['0'] = 'ROOT'
+        transitions = []
+
+        while queue:
+            stack, queue, state, trans = reference(stack, queue, state)
+            mx.append([features.extract(stack, queue, state, column_names_2006, sentence), trans])
+            transitions.append(trans)
+
+        stack, state = transition.empty_stack(stack, state)
+
+        for word in sentence:
+            word['head'] = state['heads'][word['id']]
+
+    for row in mx[:9]:
+        print(row[0], row[1])
