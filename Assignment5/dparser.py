@@ -3,9 +3,8 @@ Gold standard parser
 """
 __author__ = "Pierre Nugues"
 
-import transition
-import conll
-import features
+import transition, conll, features
+import time
 
 def reference(stack, queue, state):
     """
@@ -44,6 +43,8 @@ def reference(stack, queue, state):
     return stack, queue, state, 'sh'
 
 if __name__ == '__main__':
+    start_time = time.time()
+
     train_file = 'swedish_talbanken05_train.conll'
     test_file = 'swedish_talbanken05_test_blind.conll'
     column_names_2006 = ['id', 'form', 'lemma', 'cpostag', 'postag', 'feats', 'head', 'deprel', 'phead', 'pdeprel']
@@ -52,33 +53,10 @@ if __name__ == '__main__':
     sentences = conll.read_sentences(train_file)
     formatted_corpus = conll.split_rows(sentences, column_names_2006)
 
-    sent_cnt = 0
-    for sentence in []:
-        sent_cnt += 1
-        if sent_cnt % 1000 == 0:
-            print(sent_cnt, 'sentences on', len(formatted_corpus), flush=True)
-        stack = []
-        queue = list(sentence)
-        state = {}
-        state['heads'] = {}
-        state['heads']['0'] = '0'
-        state['deprels'] = {}
-        state['deprels']['0'] = 'ROOT'
-        transitions = []
-        while queue:
-            stack, queue, state, trans = reference(stack, queue, state)
-            transitions.append(trans)
-
-        stack, state = transition.empty_stack(stack, state)
-        #print('Equal graphs:', transition.equal_graphs(sentence, state))
-
-        # Poorman's projectivization to have well-formed graphs.
-        for word in sentence:
-            word['head'] = state['heads'][word['id']]
-        #print(transitions)
-        #print(state)
-
-    mx = []
+    feature_matrix_1 = []
+    feature_matrix_2 = []
+    feature_matrix_3 = []
+    trans_vector = []
     for sentence in formatted_corpus:
         stack = []
         queue = list(sentence)
@@ -90,8 +68,11 @@ if __name__ == '__main__':
         transitions = []
 
         while queue:
+            feature_matrix_1.append(features.extract_1(stack, queue, state, column_names_2006, sentence))
+            feature_matrix_2.append(features.extract_2(stack, queue, state, column_names_2006, sentence))
+            feature_matrix_3.append(features.extract_3(stack, queue, state, column_names_2006, sentence))
             stack, queue, state, trans = reference(stack, queue, state)
-            mx.append([features.extract(stack, queue, state, column_names_2006, sentence), trans])
+            trans_vector.append(trans)
             transitions.append(trans)
 
         stack, state = transition.empty_stack(stack, state)
@@ -99,5 +80,16 @@ if __name__ == '__main__':
         for word in sentence:
             word['head'] = state['heads'][word['id']]
 
-    for row in mx[:9]:
-        print(row[0], row[1])
+    print("--- Features: 6 param features")
+    for features, transition in zip(feature_matrix_1[:9], trans_vector[:9]):
+        print(features, transition)
+
+    print("\n--- Features: 10 param features")
+    for features, transition in zip(feature_matrix_2[:9], trans_vector[:9]):
+        print(features, transition)
+
+    print("\n--- Features: 14 param features")
+    for features, transition in zip(feature_matrix_3[:9], trans_vector[:9]):
+        print(features, transition)
+
+    print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
