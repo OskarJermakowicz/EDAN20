@@ -5,6 +5,8 @@ __author__ = "Pierre Nugues"
 
 import transition, conll, features
 import time
+from sklearn import metrics
+from sklearn import linear_model
 
 def reference(stack, queue, state):
     """
@@ -91,5 +93,22 @@ if __name__ == '__main__':
     print("\n--- Features: 14 param features")
     for features, transition in zip(feature_matrix_3[:9], trans_vector[:9]):
         print(features, transition)
+
+
+    ### Generation classification reports for the three models ###
+
+    classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
+    feature_m1_predicted = classifier.predict(feature_matrix_1)
+    feature_m2_predicted = classifier.predict(feature_matrix_2)
+    feature_m3_predicted = classifier.predict(feature_matrix_3)
+
+    print("\n--- Classification report for classifier %s:\n%s\n"
+          % (classifier, metrics.classification_report(trans_vector, feature_m1_predicted))) 
+
+    print("\n--- Classification report for classifier %s:\n%s\n"
+          % (classifier, metrics.classification_report(trans_vector, feature_m2_predicted))) 
+
+    print("\n--- Classification report for classifier %s:\n%s\n"
+          % (classifier, metrics.classification_report(trans_vector, feature_m3_predicted))) 
 
     print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
