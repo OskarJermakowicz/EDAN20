@@ -82,6 +82,9 @@ if __name__ == '__main__':
         for word in sentence:
             word['head'] = state['heads'][word['id']]
 
+
+    ### Print features to see if they are correct ###
+
     print("--- Features: 6 param features")
     for features, transition in zip(feature_matrix_1[:9], trans_vector[:9]):
         print(features, transition)
@@ -110,5 +113,12 @@ if __name__ == '__main__':
 
     print("\n--- Classification report for classifier %s:\n%s\n"
           % (classifier, metrics.classification_report(trans_vector, feature_m3_predicted))) 
+
+
+    ### Save the three models to files ###
+
+    conll.save('model1.conll', zip(feature_matrix_1, trans_vector), [])
+    conll.save('model2.conll', zip(feature_matrix_2, trans_vector), [])
+    conll.save('model3.conll', zip(feature_matrix_3, trans_vector), [])
 
     print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
