@@ -100,18 +100,20 @@ def save(file, features_matrix, trans_vector):
             f_out.write(str(entry) + ' ' + str(trans_vector[index]) + '\n')
 
 def parse_ml(stack, queue, graph, trans):
-    if stack and trans[:2] == 'ra':
+    if stack and transition.can_rightarc(stack) and trans[:2] == 'ra':
         stack, queue, graph = transition.right_arc(stack, queue, graph, trans[3:])
         return stack, queue, graph, 'ra'
-    if stack and trans[:2] == 'la':
+    if stack and transition.can_leftarc(stack, graph) and trans[:2] == 'la':
         stack, queue, graph = transition.left_arc(stack, queue, graph, trans[3:])
         return stack, queue, graph, 'la'
-    if stack and trans[:2] == 're':
+    if stack and transition.can_reduce(stack, graph) and trans[:2] == 're':
         stack, queue, graph = transition.reduce(stack, queue, graph)
         return stack, queue, graph, 're'
     stack, queue, graph = transition.shift(stack, queue, graph)
     return stack, queue, graph, 'sh'
 
+def decode(trans):
+    return trans
 
 if __name__ == '__main__':
     start_time = time.time()
@@ -129,7 +131,7 @@ if __name__ == '__main__':
 
     ### Start ###
     vec = DictVectorizer(sparse=True)
-    classifier = linear_model.Perceptron(penalty='l2')
+    classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
 
     graph = []
     trans_vector = []
@@ -145,19 +147,17 @@ if __name__ == '__main__':
 
         while queue:
             extracted_features = features.extract1(stack, queue, state, column_names_2006, sentence)
-            X = vec.fit_transform(extracted_features)
-            trans = '' #classifier.predict(X)
-            stack, queue, state, trans = parse_ml(stack, queue, state, trans)
+            X = vec.transform(extracted_features)
+            # trans is an encoded number, call a decode function to insert into parse_ml function
+            trans = classifier.predict(X)
+            print(trans)
+            stack, queue, state, trans = parse_ml(stack, queue, state, decode(trans))
             trans_vector.append(trans)
 
-        # Empty the stack
-        while stack:
-            if transition.can_reduce(stack, state):
-                stack, queue, graph = transition.reduce(stack, queue, graph)
-            else:
-                stack[0]['head'] = 0
-                stack[0]['deprel'] = 'ROOT'
-                stack, queue, graph = transition.reduce(stack, queue, graph)
+        stack, state = transition.empty_stack(stack, state)
+
+        for word in sentence:
+            word['head'] = state['heads'][word['id']]
 
         # Add the result to the graph
 
