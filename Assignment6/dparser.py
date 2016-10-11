@@ -112,9 +112,6 @@ def parse_ml(stack, queue, graph, trans):
     stack, queue, graph = transition.shift(stack, queue, graph)
     return stack, queue, graph, 'sh'
 
-def decode(trans):
-    return trans
-
 if __name__ == '__main__':
     start_time = time.time()
 
@@ -123,18 +120,55 @@ if __name__ == '__main__':
     column_names_2006 = ['id', 'form', 'lemma', 'cpostag', 'postag', 'feats', 'head', 'deprel', 'phead', 'pdeprel']
     column_names_2006_test = ['id', 'form', 'lemma', 'cpostag', 'postag', 'feats']
 
-    column_names_features= ['stack0_pos', 'stack1_pos', 'stack2_pos', 'stack0_word', 'stack1_word', 'stack2_word', 'queue0_pos', 'queue1_pos', 'queue2_pos', 'queue0_word', 'queue1_word', 'queue2_word', 'canReduce', 'canLeftArc']
+    column_names_features_6 = ['stack0_pos', 'stack0_word', 'queue0_pos', 'queue0_word', 'canReduce', 'canLeftArc']
+    column_names_features_10 = ['stack0_pos', 'stack1_pos', 'stack0_word', 'stack1_word', 'queue0_pos', 'queue1_pos', 'queue0_word', 'queue1_word', 'canReduce', 'canLeftArc']
+    column_names_features_14 = ['stack0_pos', 'stack1_pos', 'stack2_pos', 'stack0_word', 'stack1_word', 'stack2_word', 'queue0_pos', 'queue1_pos', 'queue2_pos', 'queue0_word', 'queue1_word', 'queue2_word', 'canReduce', 'canLeftArc']
 
-    sentences = conll.read_sentences(train_file)
-    formatted_corpus = conll.split_rows(sentences, column_names_2006)
 
+    ### TRAINING ###
+    sentences_train = conll.read_sentences(train_file)
+    formatted_corpus_train = conll.split_rows(sentences_train, column_names_2006)
 
-    ### Start ###
-    vec = DictVectorizer(sparse=True)
-    classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
-
-    graph = []
+    features_mx1 = []
     trans_vector = []
+    for sentence in formatted_corpus_train:
+        stack = []
+        queue = list(sentence)
+        state = {}
+        state['heads'] = {}
+        state['heads']['0'] = '0'
+        state['deprels'] = {}
+        state['deprels']['0'] = 'ROOT'
+        transitions = []
+
+        while queue:
+            features_mx1.append(features.extract1(stack, queue, state, column_names_2006, sentence))
+            stack, queue, state, trans = reference(stack, queue, state)
+            trans_vector.append(trans)
+            transitions.append(trans)
+
+        stack, state = transition.empty_stack(stack, state)
+
+        for word in sentence:
+            word['head'] = state['heads'][word['id']]
+
+    vec = DictVectorizer(sparse=True)
+    X = vec.fit_transform(features_mx1[:50000])
+    y, dict_classes, inv_dict_classes = encode_classes(trans_vector[:50000])
+
+    classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
+    model = classifier.fit(X, y)
+
+    y_test = [inv_dict_classes[i] if i in trans_vector[:50000] else 0 for i in trans_vector[:50000]]
+    y_test_predicted = classifier.predict(X)
+    print("Classification report for classifier %s:\n%s\n"
+          % (classifier, metrics.classification_report(y_test, y_test_predicted)))
+
+    #### TEST ###
+    sentences = conll.read_sentences(test_file) # Test file?
+    formatted_corpus = conll.split_rows(sentences, column_names_2006_test)
+
+    corp = []
     for sentence in formatted_corpus:
         stack = []
         queue = list(sentence)
@@ -148,81 +182,18 @@ if __name__ == '__main__':
         while queue:
             extracted_features = features.extract1(stack, queue, state, column_names_2006, sentence)
             X = vec.transform(extracted_features)
-            # trans is an encoded number, call a decode function to insert into parse_ml function
             trans = classifier.predict(X)
-            print(trans)
-            stack, queue, state, trans = parse_ml(stack, queue, state, decode(trans))
-            trans_vector.append(trans)
+            stack, queue, state, trans = parse_ml(stack, queue, state, dict_classes[trans[0]])
 
         stack, state = transition.empty_stack(stack, state)
 
         for word in sentence:
             word['head'] = state['heads'][word['id']]
+            word['deprel'] = state['deprels'][word['id']]
 
-        # Add the result to the graph
+        print(sentence)
+        corp.append(sentence)
 
-        graph.append(state)
-
+    conll.save('model_result_1.conll', corp, column_names_2006)
 
     print("\n--- Execution time: %s seconds ---" % (time.time() - start_time))
-
-
-'''
-    features_mx1 = []
-    features_mx2 = []
-    features_mx3 = []
-    trans_vector = []
-    for sentence in formatted_corpus:
-        stack = []
-        queue = list(sentence)
-        state = {}
-        state['heads'] = {}
-        state['heads']['0'] = '0'
-        state['deprels'] = {}
-        state['deprels']['0'] = 'ROOT'
-        transitions = []
-
-        while queue:
-            features_mx1.append(features.extract1(stack, queue, state, column_names_2006, sentence))
-            features_mx2.append(features.extract2(stack, queue, state, column_names_2006, sentence))
-            features_mx3.append(features.extract3(stack, queue, state, column_names_2006, sentence))
-            stack, queue, state, trans = reference(stack, queue, state)
-            trans_vector.append(trans)
-            transitions.append(trans)
-
-        stack, state = transition.empty_stack(stack, state)
-
-        for word in sentence:
-            word['head'] = state['heads'][word['id']]
-
-
-    ### Print features ###
-
-    print("--- Features: 6 param features")
-    for index, features in enumerate(dict_to_matrix(features_mx1[:9], column_names_features)):
-        print(features, trans_vector[index])
-
-    print("\n--- Features: 10 param features")
-    for index, features in enumerate(dict_to_matrix(features_mx2[:9], column_names_features)):
-        print(features, trans_vector[index])
-
-    print("\n--- Features: 14 param features")
-    for index, features in enumerate(dict_to_matrix(features_mx3[:9], column_names_features)):
-        print(features, trans_vector[index])
-
-
-    ### Generation classification reports for the three models ###
-
-    with codecs.open('model1.conll', 'w', 'utf-8') as f_out:
-        vec = DictVectorizer(sparse=True)
-        X = vec.fit_transform(features_mx1)
-        y, dict_classes, inv_dict_classes = encode_classes(trans_vector)
-
-        classifier = linear_model.Perceptron(penalty='l2')
-        #classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
-        model = classifier.fit(X, y)
-        y_test = [inv_dict_classes[i] if i in trans_vector else 0 for i in trans_vector]
-        y_test_predicted = classifier.predict(X)
-
-        f_out.write(str(y_test_predicted))
-'''

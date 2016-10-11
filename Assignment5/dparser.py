@@ -159,14 +159,20 @@ if __name__ == '__main__':
     ### Generation classification reports for the three models ###
 
     vec = DictVectorizer(sparse=True)
-    X = vec.fit_transform(features_mx1[:50000])
-    y, dict_classes, inv_dict_classes = encode_classes(trans_vector[:50000])
+    X = vec.fit_transform(features_mx3)
+    y, dict_classes, inv_dict_classes = encode_classes(trans_vector)
 
+    with codecs.open('dict_classes.conll', 'w', 'utf-8') as f_out:
+        for pair in dict_classes:
+            f_out.write(str(pair) + " " + str(dict_classes[pair]) + "\n")
+    print("Generated dict_classes.conll")
+
+    print(dict_classes)
     #classifier = linear_model.Perceptron(penalty='l2')
     classifier = linear_model.LogisticRegression(penalty='l2', dual=True, solver='liblinear')
     model = classifier.fit(X, y)
 
-    y_test = [inv_dict_classes[i] if i in trans_vector[:50000] else 0 for i in trans_vector[:50000]]
+    y_test = [inv_dict_classes[i] if i in trans_vector else 0 for i in trans_vector]
     y_test_predicted = classifier.predict(X)
     print("Classification report for classifier %s:\n%s\n"
           % (classifier, metrics.classification_report(y_test, y_test_predicted)))
@@ -174,7 +180,7 @@ if __name__ == '__main__':
 
     ### Save the models to output files ###
 
-    pickle.dump(model, open("model1.conll", "w"))
+    pickle.dump(model, open("model3.conll", "wb"))
 
     #save('model1.conll', dict_to_matrix(features_mx1, column_names_features), trans_vector)
     #save('model2.conll', dict_to_matrix(features_mx2, column_names_features), trans_vector)
